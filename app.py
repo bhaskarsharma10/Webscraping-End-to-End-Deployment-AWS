@@ -1,39 +1,43 @@
-from flask import Flask, render_template, request,jsonify
+from flask import Flask,render_template,request,jsonify,send_file
 from flask_cors import CORS,cross_origin
 import requests
 from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen as uReq
+import os
 
 app = Flask(__name__)
 
-@app.route('/',methods=['GET'])  # route to display the home page
-@cross_origin()
-def homePage():
+@app.route("/",methods=['GET'])
+def homepage():
     return render_template("index.html")
 
-@app.route('/review',methods=['POST','GET']) # route to show the review comments in a web UI
-@cross_origin()
+@app.route("/review",methods=['GET','POST'])
 def index():
     if request.method == 'POST':
         try:
-            searchString = request.form['content'].replace(" ","")
-            flipkart_url = "https://www.flipkart.com/search?q=" + searchString
-            uClient = uReq(flipkart_url)
-            flipkartPage = uClient.read()
-            uClient.close()
-            flipkart_html = bs(flipkartPage, "html.parser")
-            bigboxes = flipkart_html.findAll("div", {"class": "_1AtVbE col-12-12"})
-            del bigboxes[0:3]
-            box = bigboxes[0]
-            productLink = "https://www.flipkart.com" + box.div.div.div.a['href']
-            prodRes = requests.get(productLink)
-            prodRes.encoding='utf-8'
-            prod_html = bs(prodRes.text, "html.parser")
-            print(prod_html)
-            commentboxes = prod_html.find_all('div', {'class': "_16PBlm"})
+            searchString = request.form["content"]
+            flipkart_url = "https://www.flipkart.com/search?q=" + searchString.replace(" ","%20")
+            uclient = uReq(flipkart_url)
+            flipkart_page = uclient.read()
+            uclient.close()
+            flipkart_html = bs(flipkart_page,"html.parser")
+            bigbox = flipkart_html.find_all("div", {"class":"_1AtVbE col-12-12"})
+            del bigbox[0:3]
+            box = bigbox[0]
+            product_link = "https://www.flipkart.com" + box.div.div.div.a['href']
+            product_req = requests.get(product_link)
+            product_html = bs(product_req.text,"html.parser")
+            print(product_html)
+            commentboxes = product_html.find_all('div', {'class': "_16PBlm"})
 
-            filename = searchString + ".csv"
-            fw = open(filename, "w")
+            global filename
+            try:
+                
+                filename = searchString + ".csv"
+                
+            except:
+                filename = searchString + ".csv" + "copy"
+            fw = open(filename, "w", encoding="utf-8")
             headers = "Product, Customer Name, Rating, Heading, Comment \n"
             fw.write(headers)
             reviews = []
@@ -69,6 +73,8 @@ def index():
                 mydict = {"Product": searchString, "Name": name, "Rating": rating, "CommentHead": commentHead,
                           "Comment": custComment}
                 reviews.append(mydict)
+                fw.write(searchString+","+name+","+rating+","+commentHead+","+custComment+"\n")
+                
             return render_template('results.html', reviews=reviews[0:(len(reviews)-1)])
         except Exception as e:
             print('The Exception message is: ',e)
@@ -78,6 +84,12 @@ def index():
     else:
         return render_template('index.html')
 
-if __name__ == "__main__":
-    #app.run(host='127.0.0.1', port=8001, debug=True)
-	app.run(debug=True)
+@app.route('/getPlotCSV') 
+def csv_get():
+    return send_file(filename,as_attachment=True),os.remove(filename)
+
+    
+
+
+if __name__=="__main__":
+    app.run(host="0.0.0.0",port="5002")
