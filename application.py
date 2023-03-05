@@ -32,11 +32,11 @@ def index():
             commentboxes = product_html.find_all('div', {'class': "_16PBlm"})
 
             global filename
-            try:
+            #try:
                 
-                filename = searchString + ".csv"
+            filename = searchString + ".csv"
                 
-            except:
+            #except:
                 filename = searchString + ".csv" + "copy"
             fw = open(filename, "w", encoding="utf-8")
             headers = "Product, Customer Name, Rating, Heading, Comment \n"
