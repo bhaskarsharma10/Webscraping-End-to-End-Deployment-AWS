@@ -37,7 +37,7 @@ def index():
             filename = searchString + ".csv"
                 
             #except:
-                filename = searchString + ".csv" + "copy"
+                #filename = searchString + ".csv" + "copy"
             fw = open(filename, "w", encoding="utf-8")
             headers = "Product, Customer Name, Rating, Heading, Comment \n"
             fw.write(headers)
